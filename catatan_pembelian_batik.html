@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catatan Pembelian Baju Batik</title>
+<style>
+body {font-family: Arial, sans-serif; margin: 20px; background: #f4f4f9;}
+.container {max-width: 1100px; margin: auto; background: #fff; padding: 25px; border-radius: 10px;
+box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
+h2 {color: #00695c; border-bottom: 2px solid #00695c; padding-bottom: 5px;}
+.input-group {display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;}
+.input-group input {padding: 10px; flex: 1; border: 1px solid #bbb; border-radius: 5px;}
+button {padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer;}
+#addBtn {background: #00695c; color: white;}
+#resetBtn {background: #757575; color: white;}
+table {width: 100%; border-collapse: collapse; margin-top: 20px;}
+th, td {border: 1px solid #ddd; padding: 10px;}
+th {background: #e0f2f1; cursor: pointer;}
+th:hover {background: #b2dfdb;}
+.action-btn {padding: 5px 10px; font-size: 0.8em; border-radius: 5px;}
+.edit-btn {background: #ffa000; color: white;}
+.delete-btn {background: #d32f2f; color: white;}
+.total-row {background: #ccff90; font-weight: bold;}
+.sort-asc::after {content: " ▲";}
+.sort-desc::after {content: " ▼";}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h2>Catatan Pembelian Baju Batik</h2>
+
+<div class="input-group">
+<input type="date" id="tanggal">
+<input type="text" id="produk" placeholder="Nama Produk">
+<input type="number" id="jumlah" placeholder="Jumlah" min="1">
+<input type="number" id="harga" placeholder="Harga Satuan (Rp)" min="0">
+<input type="text" id="total" placeholder="Total Otomatis" disabled>
+<button id="addBtn">Tambah</button>
+<button id="resetBtn">Reset</button>
+</div>
+
+<table>
+<thead>
+<tr>
+<th onclick="sortData('tanggal')">Tanggal</th>
+<th onclick="sortData('produk')">Produk</th>
+<th onclick="sortData('jumlah')">Jumlah</th>
+<th onclick="sortData('harga')">Harga (Rp)</th>
+<th onclick="sortData('total')">Total (Rp)</th>
+<th>Aksi</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+<tfoot>
+<tr class="total-row">
+<td colspan="4" style="text-align:right;">TOTAL KESELURUHAN:</td>
+<td id="grandTotal">Rp 0</td>
+<td></td>
+</tr>
+</tfoot>
+</table>
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("pembelian")) || [];
+let sortColumn = "";
+let sortOrder = "asc";
+
+function formatNumber(num){return num.toLocaleString("id-ID");}
+
+function updateTotal(){
+let j = Number(document.getElementById("jumlah").value);
+let h = Number(document.getElementById("harga").value);
+document.getElementById("total").value = formatNumber(j*h);
+}
+document.getElementById("jumlah").oninput = updateTotal;
+document.getElementById("harga").oninput = updateTotal;
+
+function render(){
+let tbody = document.getElementById("tableBody");
+tbody.innerHTML = "";
+let totalAll = 0;
+
+data.forEach((item,i)=>{
+let row = `<tr>
+<td>${item.tanggal}</td>
+<td>${item.produk}</td>
+<td>${item.jumlah}</td>
+<td>Rp ${formatNumber(item.harga)}</td>
+<td>Rp ${formatNumber(item.total)}</td>
+<td>
+<button class='action-btn edit-btn' onclick='editData(${i})'>Ubah</button>
+<button class='action-btn delete-btn' onclick='deleteData(${i})'>Hapus</button>
+</td>
+</tr>`;
+tbody.innerHTML += row;
+totalAll += item.total;
+});
+
+document.getElementById("grandTotal").innerText = "Rp " + formatNumber(totalAll);
+localStorage.setItem("pembelian", JSON.stringify(data));
+}
+
+document.getElementById("addBtn").onclick = function(){
+let tgl = document.getElementById("tanggal").value;
+let p = document.getElementById("produk").value;
+let j = Number(document.getElementById("jumlah").value);
+let h = Number(document.getElementById("harga").value);
+
+if(!tgl || !p || j<=0 || h<=0){
+alert("Isi semua data dengan benar!");
+return;
+}
+
+data.push({tanggal: tgl, produk: p, jumlah: j, harga: h, total: j*h});
+render();
+resetForm();
+};
+
+function resetForm(){
+document.getElementById("tanggal").value = "";
+document.getElementById("produk").value = "";
+document.getElementById("jumlah").value = "";
+document.getElementById("harga").value = "";
+document.getElementById("total").value = "";
+}
+
+document.getElementById("resetBtn").onclick = resetForm;
+
+function deleteData(i){
+if(confirm("Yakin ingin menghapus data ini?")){
+data.splice(i,1);
+render();
+}
+}
+
+function editData(i){
+let item = data[i];
+document.getElementById("tanggal").value = item.tanggal;
+document.getElementById("produk").value = item.produk;
+document.getElementById("jumlah").value = item.jumlah;
+document.getElementById("harga").value = item.harga;
+updateTotal();
+deleteData(i);
+}
+
+function sortData(col){
+if(sortColumn===col){
+sortOrder = sortOrder==="asc" ? "desc" : "asc";
+} else {
+sortColumn = col;
+sortOrder = "asc";
+}
+data.sort((a,b)=>{
+if(a[col] < b[col]) return sortOrder==="asc"? -1 : 1;
+if(a[col] > b[col]) return sortOrder==="asc"? 1 : -1;
+return 0;
+});
+render();
+}
+
+render();
+</script>
+
+</body>
+</html>
